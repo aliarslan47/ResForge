@@ -1,0 +1,40 @@
+# ResForge yapılandırması. KURAL: kodda mutlak yol YOK — her şey ${RESFORGE_*}'ten çözülür.
+project:
+  name: ResForge
+  version: "0.1.0"
+  species: "Acinetobacter baumannii"   # ilk çalışılan tür
+
+paths:
+  home: "${RESFORGE_HOME}"
+  db: "${RESFORGE_DB}"          # opsiyonel harici AMR DB kökü; yoksa araçlar kendi varsayılan DB'sini kullanır
+  work: "${RESFORGE_WORK}"      # runs/
+  data: "${RESFORGE_HOME}/data" # genomes/ + ast.tsv (Ali doldurur, git'e girmez)
+
+resources:
+  reserve_cores: 1
+  thread_fraction: 0.8
+
+# Girdi kohortu
+input:
+  genomes_glob: "${RESFORGE_HOME}/data/genomes/*.fasta"
+  ast_table: "${RESFORGE_HOME}/data/ast.tsv"   # sütunlar: genome_id, antibiotic, phenotype(R/S/I)
+
+# Hangi tarayıcılar çalışsın (dürüst: kurulu olmayan/başarısız = WARNING)
+scanners:
+  amrfinderplus: true
+  rgi: true
+  abricate_card: true
+  abricate_resfinder: true
+
+# Araç parametreleri
+tools:
+  amrfinderplus:
+    organism: "Acinetobacter_baumannii"   # AMRFinder --organism (nokta-mutasyon çağrısı için)
+    extra: ["--plus"]
+  abricate:
+    min_identity: 80
+    min_coverage: 80
+
+# Uyuşmazlık analizi
+concordance:
+  identity_threshold: 90   # bu eşiğin altındaki çağrılar 'zayıf' işaretlenir

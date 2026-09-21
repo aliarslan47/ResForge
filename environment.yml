@@ -1,0 +1,13 @@
+# ResForge çekirdek ortamı. AMR tarayıcıları (AMRFinderPlus/RGI/ABRicate) ve
+# hAMRonization AYRI izole ortamlardadır (ali-amrfinder, ali-rgi, ali-virulence, hamr)
+# ve util.ENV üzerinden çağrılır — bu çekirdeğe konmaz.
+name: resforge
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pyyaml>=6
+  - pandas>=2
+  - scikit-learn>=1.3   # yalnız ince fenotip merceği için (ağır ML AMRForge'da)
+  - jinja2>=3

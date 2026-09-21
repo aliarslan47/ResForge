@@ -1,0 +1,13 @@
+# Veri ve çıktılar koddan ayrı (taşınabilirlik + PII/veri izolasyonu)
+data/
+runs/
+databases/
+*.log
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+build/
+dist/
+.env
