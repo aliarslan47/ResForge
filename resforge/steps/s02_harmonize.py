@@ -14,7 +14,7 @@ NEEDS_INPUT_NAME = {"amrfinderplus", "rgi"}
 
 
 def _harmonize_one(runner, parser, native, out_tsv, gid, sw_version):
-    args = [parser,
+    args = ["hamronize", parser,
             "--analysis_software_version", sw_version or "unknown",
             "--reference_database_version", "unknown",
             "--format", "tsv", "--output", str(out_tsv)]
