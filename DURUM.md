@@ -23,8 +23,20 @@
   - Antibiyotik-bazlı uyum: cipro/gentamisin 0.85, imipenem 0.62, mero/tetra/tobra ~0.53-0.55, seftazidim 0.57, **amikacin 0.40** (en düşük).
   - Çıktı: `runs/20260922_110252_acinetobacter/` (report.html + concord/ + phenotype/).
 
+## Yapıldı (devam)
+- **İNCE (DRUG-ÖZGÜ) MERCEK TAMAM (2026-09-23) — s04 üç-katmanlı + fenotibe-kör hibrit kapı.**
+  - Katman 1 **sınıf-kanıtı** (eski), Katman 2 **ilaç-özgü** (`antimicrobial_agent` etiketinde tam ilaç adı geçen gen), Katman 3 **HİBRİT**.
+  - **Kapı fenotibe KÖR (sızıntı yok):** ilaç-özgü katman yalnız, antibiyotiğin tam adı kendi sınıf-hit genlerinin etiketinde ≥1 kez geçen ilaçlarda uygulanır; geçmiyorsa (meropenem/ceftazidime — araçlar sınıf-adı yazıyor) sınıf katmanında kalır. Karar yalnız genotip sözlüğünden.
+  - **SONUÇ (n=40):** genel uyum sınıf **0.606** → ilaç-özgü 0.683 → **HİBRİT 0.706** (+0.10). Hibrit sınıfa göre **36 sahte-R düzeltti, 0 gerçek-R kaybetti** = saf kazanç.
+  - **Manşet:** amikacin **0.40 → 0.95** (+0.55), tobramycin 0.525 → **0.85** (+0.33); aac sahte-R'leri temizlendi. Beta-laktamlar kapıyla korundu (ceftazidime/meropenem sınıfta kaldı, kayıp yok).
+  - **Bulgu (özgün):** ilaç-özgü çözünürlüğün değeri SINIFA-BAĞIMLI — aminoglikozitlerde biyoloji+etiket zengin (büyük kazanç), beta-laktamlarda geniş-spektrum+kaba etiket (kapı devre dışı bırakır). "İlaç-özgü her zaman iyi" değil.
+  - Çıktı: `phenotype/genotype_vs_phenotype.tsv` (class/drug/hybrid çağrı+uyum), `phenotype/per_antibiotic.tsv` (policy+3 uyum+delta), `summary.json` (`gate` istatistikleri dahil). Commit'ler: `fc137ed` (iki-katman), hibrit bu turda.
+
 ## Sırada
-1. **İnce (drug-özgü) mercek:** amikacin 0.40 düşüklüğü sınıf-düzeyi keyword'ün kabalığından — aac(6') genleri AMINOGLYCOSIDE sayılıp amikacin-R öngörüyor ama izolat çoğu kez amikacin-S. ResFinder'ın ilaç-adı etiketlerinden (ör. `AMIKACIN;...;TOBRAMYCIN`) drug-özgü çözünürlük ekle → s04 iki-katmanlı: sınıf-kanıtı vs ilaç-özgü-kanıt. (ResForge'un "ince fenotip merceği" amacı bu.)
+1. **s05 rapor:** hibrit sonucu + ilaç-başına policy tablosu + "sınıfa-bağımlı değer" bulgusunu çift dilli HTML'e işle.
+2. **Literatür konumlama:** Davies 2021 (Microbial Genomics, E.coli çoklu-araç uyuşmazlığı — en yakın rakip) + hAMRoaster tam metin oku; "uyuşmazlık→fenotip-güven kuplajı + A.baumannii + drug-özgü hibrit" özgünlüğünü hakem-korumalı yaz.
+3. **Ölçekle** (`--n 400`, ilaç-başına R/S tabakalı) → ilaç-başına istatistiksel güven; arka plan+resume.
+4. **TEMİZLİK:** iş bitince ağır veri sil (data/ FASTA + runs/*/scan/); fetch script deterministik, geri çekilebilir.
 2. **abricate çakışması:** card+resfinder hAMRonization'da tek `abricate` adına birleşiyor → efektif araç=3. Konkordans paydası/araç-kimliği için DB'yi ayrı tut (ör. analysis_software_name'e DB ekle) düşünülmeli.
 3. Ölçekle (`--n 400`), çift dilli rapor cilası.
 3. PipelineForge ile `docs/pipeline_architecture.html` (spec: `PipelineForge/specs/resforge.yml`) + GitHub Pages.

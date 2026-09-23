@@ -99,6 +99,25 @@ def run(cfg: dict, run_dir: Path, runner_factory=None) -> dict:
     n_tools = df["tool"].nunique()
     support = (df.groupby(["genome_id", "gene"])["tool"].nunique()).to_dict()
 
+    # --- KAPI (fenotibe KÖR): ilaç-özgü katman yalnız, antibiyotiğin tam adı kendi
+    # sınıf-hit genlerinin antimicrobial_agent etiketinde en az 1 kez geçen ilaçlar için
+    # uygulanır. Adı hiç geçmiyorsa (ör. meropenem/ceftazidime — araçlar sınıf-adı yazıyor)
+    # etiket-yokluğu ≠ direnç-yokluğu → sınıf katmanında kal. KARAR YALNIZ genotip
+    # sözlüğünden; AST'ye bakılmaz → veri sızıntısı yok.
+    resolvable, gate_stats = {}, {}
+    for ab, cls in ab2class.items():
+        chits = df[df["drug_class"].str.contains(cls, na=False)]
+        n_rows = int(len(chits))
+        n_labeled = int((chits["antimicrobial_agent"].str.strip() != "").sum())
+        comps = _agent_components(ab)
+        n_named = int(chits["antimicrobial_agent"].map(
+            lambda s: any(c in _agent_names(s) for c in comps)).sum()) if n_rows else 0
+        resolvable[ab] = n_named > 0
+        gate_stats[ab] = {"class": cls, "n_class_hits": n_rows, "n_labeled": n_labeled,
+                          "n_drug_named": n_named,
+                          "label_coverage": round(n_labeled / n_rows, 4) if n_rows else 0.0,
+                          "policy": "drug_specific" if n_named > 0 else "class_fallback"}
+
     rows = []
     for _, a in ast.iterrows():
         gid, ab, pheno = a.get("genome_id", "").strip(), a.get("antibiotic", "").strip(), a.get("phenotype", "").strip().upper()
@@ -124,15 +143,23 @@ def run(cfg: dict, run_dir: Path, runner_factory=None) -> dict:
             genotype_R_drug = specific
             drug_resolution = "drug_specific"
 
+        # Katman 3 (HİBRİT): kapı açıksa ilaç-özgü, değilse sınıf
+        gate_open = resolvable.get(ab, False)
+        genotype_R_hybrid = genotype_R_drug if gate_open else genotype_R_class
+
         supports = [support.get((gid, gene), 0) for gene in hits["gene"].unique()]
         max_support = max(supports) if supports else 0
         agree_class = (genotype_R_class and pheno == "R") or (not genotype_R_class and pheno == "S")
         agree_drug = (genotype_R_drug and pheno == "R") or (not genotype_R_drug and pheno == "S")
+        agree_hybrid = (genotype_R_hybrid and pheno == "R") or (not genotype_R_hybrid and pheno == "S")
         rows.append({
             "genome_id": gid, "antibiotic": ab, "drug_class": cls, "phenotype": pheno,
             "genotype_call_class": "R" if genotype_R_class else "S",
             "genotype_call_drug": "R" if genotype_R_drug else "S",
+            "genotype_call_hybrid": "R" if genotype_R_hybrid else "S",
             "agreement_class": agree_class, "agreement_drug": agree_drug,
+            "agreement_hybrid": agree_hybrid,
+            "policy": "drug_specific" if gate_open else "class_fallback",
             "drug_resolution": drug_resolution,
             "n_support_genes": len(hits["gene"].unique()),
             "max_tool_support": max_support,
@@ -148,24 +175,23 @@ def run(cfg: dict, run_dir: Path, runner_factory=None) -> dict:
         graded = out[out["phenotype"].isin(["R", "S"])].copy()
         summary["overall_agreement_class"] = round(float(graded["agreement_class"].mean()), 4)
         summary["overall_agreement_drug"] = round(float(graded["agreement_drug"].mean()), 4)
-        summary["n_flipped_to_S"] = int(((graded["genotype_call_class"] == "R") &
-                                         (graded["genotype_call_drug"] == "S")).sum())
-        # kaç sahte-R düzeldi (sınıf R & pheno S iken drug S'e döndü)
-        fixed = graded[(graded["genotype_call_class"] == "R") & (graded["genotype_call_drug"] == "S") &
-                       (graded["phenotype"] == "S")]
-        broke = graded[(graded["genotype_call_class"] == "R") & (graded["genotype_call_drug"] == "S") &
-                       (graded["phenotype"] == "R")]
-        summary["false_R_fixed_by_drug_layer"] = int(len(fixed))
-        summary["true_R_lost_by_drug_layer"] = int(len(broke))
+        summary["overall_agreement_hybrid"] = round(float(graded["agreement_hybrid"].mean()), 4)
+        # HİBRİT sınıfa göre kaç R→S çevirdi ve bunların ne kadarı doğru (sahte-R) / yanlış (gerçek-R)
+        flipped = graded[(graded["genotype_call_class"] == "R") & (graded["genotype_call_hybrid"] == "S")]
+        summary["n_flipped_to_S_hybrid"] = int(len(flipped))
+        summary["false_R_fixed_by_hybrid"] = int((flipped["phenotype"] == "S").sum())
+        summary["true_R_lost_by_hybrid"] = int((flipped["phenotype"] == "R").sum())
 
         # ilaç-başına kırılım (amikacin iyileşmesini görünür kılar)
         for ab, g in graded.groupby("antibiotic"):
             per_ab_rows.append({
                 "antibiotic": ab, "n": int(len(g)),
                 "R": int((g["phenotype"] == "R").sum()), "S": int((g["phenotype"] == "S").sum()),
+                "policy": gate_stats.get(ab, {}).get("policy", "?"),
                 "agreement_class": round(float(g["agreement_class"].mean()), 4),
                 "agreement_drug": round(float(g["agreement_drug"].mean()), 4),
-                "delta": round(float(g["agreement_drug"].mean() - g["agreement_class"].mean()), 4),
+                "agreement_hybrid": round(float(g["agreement_hybrid"].mean()), 4),
+                "delta_hybrid": round(float(g["agreement_hybrid"].mean() - g["agreement_class"].mean()), 4),
             })
         # araç-uyuşmazlık bağı (sınıf katmanı üzerinden, geriye-uyumlu)
         rcall = out[out["genotype_call_class"] == "R"]
@@ -174,12 +200,14 @@ def run(cfg: dict, run_dir: Path, runner_factory=None) -> dict:
         summary["agreement_when_tools_concordant"] = round(float(full["agreement_class"].mean()), 4) if len(full) else None
         summary["agreement_when_tools_discordant"] = round(float(disc["agreement_class"].mean()), 4) if len(disc) else None
 
-    per_ab = pd.DataFrame(per_ab_rows).sort_values("delta", ascending=False) if per_ab_rows else pd.DataFrame()
+    per_ab = pd.DataFrame(per_ab_rows).sort_values("delta_hybrid", ascending=False) if per_ab_rows else pd.DataFrame()
     per_ab.to_csv(pdir / "per_antibiotic.tsv", sep="\t", index=False)
     summary["per_antibiotic"] = per_ab_rows
+    summary["gate"] = gate_stats
     (pdir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"[s04] {summary.get('n_pairs',0)} çift; sınıf-uyum={summary.get('overall_agreement_class')} "
-          f"→ ilaç-özgü={summary.get('overall_agreement_drug')} "
-          f"(sahte-R düzelen={summary.get('false_R_fixed_by_drug_layer')}, "
-          f"gerçek-R kaybolan={summary.get('true_R_lost_by_drug_layer')})")
+    print(f"[s04] {summary.get('n_pairs',0)} çift; sınıf={summary.get('overall_agreement_class')} "
+          f"| ilaç-özgü={summary.get('overall_agreement_drug')} "
+          f"| HİBRİT={summary.get('overall_agreement_hybrid')} "
+          f"(hibrit sahte-R düzelen={summary.get('false_R_fixed_by_hybrid')}, "
+          f"gerçek-R kaybolan={summary.get('true_R_lost_by_hybrid')})")
     return summary
