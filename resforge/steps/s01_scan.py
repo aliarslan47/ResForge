@@ -9,8 +9,26 @@ from pathlib import Path
 from .. import util
 
 
+def _reuse(out_dir, name, out):
+    """RESUME (kapanma-dayanıklı): araç çıktısı zaten dolu + provenance exit 0 ise
+    yeniden koşma — mevcut provenance'ı döndür. Aksi halde None (koş)."""
+    prov_path = out_dir / f"{name}.provenance.json"
+    if out.exists() and out.stat().st_size > 0 and prov_path.exists():
+        try:
+            prov = json.loads(prov_path.read_text(encoding="utf-8"))
+            if prov.get("exit_code") == 0:
+                prov = dict(prov, reused=True)
+                return prov
+        except (json.JSONDecodeError, OSError):
+            pass
+    return None
+
+
 def _amrfinder(runner, genome, out_dir, cfg, t):
     out = out_dir / "amrfinderplus.tsv"
+    prov = _reuse(out_dir, "amrfinderplus", out)
+    if prov is not None:
+        return prov, out
     tp = cfg.get("tools", {}).get("amrfinderplus", {})
     cmd = ["amrfinder", "-n", str(genome), "--threads", str(t)]
     cmd += list(tp.get("extra", ["--plus"]))
@@ -25,6 +43,10 @@ def _amrfinder(runner, genome, out_dir, cfg, t):
 
 def _rgi(runner, genome, out_dir, t):
     prefix = out_dir / "rgi"
+    out = Path(str(prefix) + ".txt")
+    prov = _reuse(out_dir, "rgi", out)
+    if prov is not None:
+        return prov, out
     prov = runner.run("rgi", ["rgi", "main", "-i", str(genome), "-o", str(prefix),
                               "-t", "contig", "-n", str(t), "--clean"],
                       conda_env=util.ENV["rgi"], version_cmd=["rgi", "main", "--version"], check=False)
@@ -33,6 +55,9 @@ def _rgi(runner, genome, out_dir, t):
 
 def _abricate(runner, genome, out_dir, db, cfg):
     out = out_dir / f"abricate_{db}.tsv"
+    prov = _reuse(out_dir, f"abricate_{db}", out)
+    if prov is not None:
+        return prov, out
     ab = cfg.get("tools", {}).get("abricate", {})
     cmd = ["abricate", "--db", db, "--nopath",
            "--minid", str(ab.get("min_identity", 80)),
