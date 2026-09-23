@@ -1,0 +1,42 @@
+# ResForge — Pseudomonas aeruginosa yapılandırması (baumannii'den İZOLE).
+# Veri data/paeruginosa/ altında; baumannii'nin data/ kök dosyalarına dokunmaz.
+project:
+  name: ResForge
+  version: "0.1.0"
+  species: "Pseudomonas aeruginosa"
+
+paths:
+  home: "${RESFORGE_HOME}"
+  db: "${RESFORGE_DB}"
+  work: "${RESFORGE_WORK}"
+  data: "${RESFORGE_HOME}/data/paeruginosa"
+
+resources:
+  reserve_cores: 1
+  thread_fraction: 0.8
+
+# Girdi kohortu (organizma-izole alt-klasör)
+input:
+  genomes_glob: "${RESFORGE_HOME}/data/paeruginosa/genomes/*.fasta"
+  ast_table: "${RESFORGE_HOME}/data/paeruginosa/ast.tsv"
+
+scanners:
+  amrfinderplus: true
+  rgi: true
+  abricate_card: true
+  abricate_resfinder: true
+
+tools:
+  amrfinderplus:
+    organism: "Pseudomonas_aeruginosa"   # AMRFinder --organism (P. aeruginosa nokta-mutasyon/gyrA vb.)
+    extra: ["--plus"]
+  abricate:
+    min_identity: 80
+    min_coverage: 80
+
+concordance:
+  identity_threshold: 90
+
+# Fenotip merceği (s04) — kapı ölçüte göre organizma-bağımsız çalışır
+phenotype:
+  drug_name_coverage_min: 0.05

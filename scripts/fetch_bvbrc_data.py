@@ -72,16 +72,18 @@ def _get(path: str, params: str, accept="application/json", tries=4, timeout=90)
     raise RuntimeError(f"BV-BRC isteği başarısız ({tries} deneme): {url}\n  son hata: {last}")
 
 
-def fetch_genome_pool(pool_size: int) -> list[dict]:
-    """Yüksek kaliteli aday genomlar: Complete önce, sonra iyi WGS. Deterministik (genome_id sıralı)."""
+def fetch_genome_pool(pool_size: int, taxon: int = TAXON,
+                      len_min: int = 3_500_000, len_max: int = 4_400_000) -> list[dict]:
+    """Yüksek kaliteli aday genomlar: Complete önce, sonra iyi WGS. Deterministik (genome_id sıralı).
+    len_min/len_max organizmaya göre değişir (A. baumannii ~4 Mb, P. aeruginosa ~6.3 Mb)."""
     fields = "genome_id,genome_name,genome_status,genome_length,contigs,genome_quality,assembly_accession,contig_n50"
     out: list[dict] = []
     seen: set[str] = set()
     tiers = [
-        f"and(eq(taxon_id,{TAXON}),eq(public,true),eq(genome_status,Complete),eq(genome_quality,Good),"
-        f"gt(genome_length,3500000),lt(genome_length,4400000))",
-        f"and(eq(taxon_id,{TAXON}),eq(public,true),eq(genome_status,WGS),eq(genome_quality,Good),"
-        f"gt(genome_length,3500000),lt(genome_length,4400000),lt(contigs,150))",
+        f"and(eq(taxon_id,{taxon}),eq(public,true),eq(genome_status,Complete),eq(genome_quality,Good),"
+        f"gt(genome_length,{len_min}),lt(genome_length,{len_max}))",
+        f"and(eq(taxon_id,{taxon}),eq(public,true),eq(genome_status,WGS),eq(genome_quality,Good),"
+        f"gt(genome_length,{len_min}),lt(genome_length,{len_max}),lt(contigs,200))",
     ]
     for q in tiers:
         start = 0
@@ -171,15 +173,19 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=40, help="kohort genom sayısı")
     ap.add_argument("--pool", type=int, default=1500, help="aday genom havuzu boyutu")
     ap.add_argument("--home", default=None, help="RESFORGE_HOME (varsayılan: repo kökü)")
+    ap.add_argument("--taxon", type=int, default=TAXON, help="BV-BRC taxon_id (470=A.baumannii, 287=P.aeruginosa)")
+    ap.add_argument("--subdir", default="", help="data/ altında organizma alt-klasörü (izolasyon; ör. paeruginosa)")
+    ap.add_argument("--len-min", type=int, default=3_500_000, help="min genom uzunluğu (bp)")
+    ap.add_argument("--len-max", type=int, default=4_400_000, help="max genom uzunluğu (bp)")
     args = ap.parse_args()
 
     home = Path(args.home) if args.home else Path(__file__).resolve().parents[1]
-    data = home / "data"
+    data = home / "data" / args.subdir if args.subdir else home / "data"
     genomes = data / "genomes"
     genomes.mkdir(parents=True, exist_ok=True)
 
-    print(f"[1/4] Aday havuz çekiliyor (hedef {args.pool}) …")
-    pool = fetch_genome_pool(args.pool)
+    print(f"[1/4] Aday havuz çekiliyor (taxon={args.taxon}, uzunluk {args.len_min//10**6}-{args.len_max//10**6}Mb, hedef {args.pool}) …")
+    pool = fetch_genome_pool(args.pool, taxon=args.taxon, len_min=args.len_min, len_max=args.len_max)
     print(f"      {len(pool)} yüksek kaliteli genom bulundu.")
 
     print(f"[2/4] AST çekiliyor ({len(pool)} genom, {len(ANTIBIOTIC_CLASS)} antibiyotik) …")
