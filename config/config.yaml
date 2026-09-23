@@ -38,3 +38,11 @@ tools:
 # Uyuşmazlık analizi
 concordance:
   identity_threshold: 90   # bu eşiğin altındaki çağrılar 'zayıf' işaretlenir
+
+# Fenotip merceği (s04)
+phenotype:
+  # İlaç-özgü katman kapısı: bir ilacın sınıf-hitlerinin en az bu oranı o ilaç adını
+  # (antimicrobial_agent) taşımalı → aksi halde sınıf katmanında kal. "≥1 kez" (0.0)
+  # ölçekte kırılgan (tek başıboş etiket kapıyı açıp felakete yol açtı — n=300 denemesi).
+  # Fenotibe kör (yalnız genotip-etiket sözlüğü) → veri sızıntısı yok.
+  drug_name_coverage_min: 0.05

@@ -104,6 +104,11 @@ def run(cfg: dict, run_dir: Path, runner_factory=None) -> dict:
     # uygulanır. Adı hiç geçmiyorsa (ör. meropenem/ceftazidime — araçlar sınıf-adı yazıyor)
     # etiket-yokluğu ≠ direnç-yokluğu → sınıf katmanında kal. KARAR YALNIZ genotip
     # sözlüğünden; AST'ye bakılmaz → veri sızıntısı yok.
+    # Kapı eşiği: sınıf-hitlerin en az bu oranı o ilaç adını taşımalı. "≥1 kez"
+    # (eşik=0) ölçekte kırılgan — tek başıboş etiket (ör. 2/3213 ceftazidime) kapıyı
+    # açıp felakete yol açtı (n=300 denemesi). Eşik anlamlı-temsil ölçütü; AST'ye
+    # bakmaz → fenotibe kör kalır (sızıntı yok). Config'ten ayarlanır.
+    gate_min = float(cfg.get("phenotype", {}).get("drug_name_coverage_min", 0.05))
     resolvable, gate_stats = {}, {}
     for ab, cls in ab2class.items():
         chits = df[df["drug_class"].str.contains(cls, na=False)]
@@ -112,11 +117,14 @@ def run(cfg: dict, run_dir: Path, runner_factory=None) -> dict:
         comps = _agent_components(ab)
         n_named = int(chits["antimicrobial_agent"].map(
             lambda s: any(c in _agent_names(s) for c in comps)).sum()) if n_rows else 0
-        resolvable[ab] = n_named > 0
+        drug_cov = (n_named / n_rows) if n_rows else 0.0
+        resolvable[ab] = drug_cov >= gate_min
         gate_stats[ab] = {"class": cls, "n_class_hits": n_rows, "n_labeled": n_labeled,
                           "n_drug_named": n_named,
                           "label_coverage": round(n_labeled / n_rows, 4) if n_rows else 0.0,
-                          "policy": "drug_specific" if n_named > 0 else "class_fallback"}
+                          "drug_name_coverage": round(drug_cov, 4),
+                          "gate_min": gate_min,
+                          "policy": "drug_specific" if drug_cov >= gate_min else "class_fallback"}
 
     rows = []
     for _, a in ast.iterrows():

@@ -32,6 +32,17 @@
   - **Bulgu (özgün):** ilaç-özgü çözünürlüğün değeri SINIFA-BAĞIMLI — aminoglikozitlerde biyoloji+etiket zengin (büyük kazanç), beta-laktamlarda geniş-spektrum+kaba etiket (kapı devre dışı bırakır). "İlaç-özgü her zaman iyi" değil.
   - Çıktı: `phenotype/genotype_vs_phenotype.tsv` (class/drug/hybrid çağrı+uyum), `phenotype/per_antibiotic.tsv` (policy+3 uyum+delta), `summary.json` (`gate` istatistikleri dahil). Commit'ler: `fc137ed` (iki-katman), hibrit bu turda.
 
+## Yapıldı (devam)
+- **ÖLÇEKLEME DENEMESİ n=300 TAMAM (2026-09-23) — bulgu sağlam + gizli kapı kusuru bulundu+düzeltildi.**
+  - 300 genom (150R/150S meropenem, amikacin 205R/95S), fetch nested (40⊂300), tam akış exit 0, ~3.5-4 sa. scan + ~1 sa. harmonize.
+  - **RESUME eklendi (s01):** dolu çıktı+exit0 varsa araç atlanır; kesinti-dayanıklı (40-genom testi 160 çağrı 0.4sn).
+  - **ÖLÇEKLEME DARBOĞAZI:** s02 harmonize'da her hamronize çağrısı `conda run -n hamr` ile ortam açıyor (~6sn/çağrı × 1200 = ~1 sa). Optimize adayı: conda aktivasyonu bir kez / toplu hamronize.
+  - **GİZLİ KUSUR (denemenin asıl kazancı):** ilk kapı ölçütü "ilaç adı ≥1 kez geçsin" idi. n=40'ta ceftazidime adı hiç geçmediğinden kapı ŞANS ESERİ kapalıydı. n=300'de 3213 etiketten SADECE 2'sinde (%0.06) geçince kapı açıldı → drug-katmanı 244 dirençli ceftazidime izolatını yanlış S sandı → ceftazidime 0.76→0.19, genel hibrit +0.10'dan +0.009'a çöktü (328 düzeldi ama 304 gerçek-R kayboldu). **n=40 sonucu fazla temizmiş — kapı kazara koruyucuydu.**
+  - **DÜZELTME:** kapı "≥1 kez" → "sınıf-hitlerin ≥%5'i ilaç adı taşısın" (`phenotype.drug_name_coverage_min=0.05`, config'ten; fenotibe hâlâ kör). ceftazidime %0.06<%5 → kapalı/korunur; amikacin %9.3, tobramycin %9.1, imipenem %35 → açık.
+  - **DÜZELTİLMİŞ SONUÇ (n=300):** sınıf 0.701 → **HİBRİT 0.753 (+0.052)**; 142 sahte-R düzeldi, **1 gerçek-R kayboldu** (tekrar ~saf kazanç, 0 per-drug regresyon).
+  - **ÇEKİRDEK BULGU REPLİKE OLDU (7.5× ölçek):** amikacin 0.68→**0.93 (+0.25)**, tobramycin 0.727→**0.907 (+0.18)**. Aminoglikozit merceği sağlam.
+  - Not: n=40 phenotype'u artık re-run edilemez (data/ast.tsv 300'lük üzerine yazıldı); n=40 sonucu tarihsel kayıtta durur.
+
 ## Sırada
 1. **s05 rapor:** hibrit sonucu + ilaç-başına policy tablosu + "sınıfa-bağımlı değer" bulgusunu çift dilli HTML'e işle.
 2. **Literatür konumlama:** Davies 2021 (Microbial Genomics, E.coli çoklu-araç uyuşmazlığı — en yakın rakip) + hAMRoaster tam metin oku; "uyuşmazlık→fenotip-güven kuplajı + A.baumannii + drug-özgü hibrit" özgünlüğünü hakem-korumalı yaz.
