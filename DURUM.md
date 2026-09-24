@@ -43,6 +43,14 @@
   - **ÇEKİRDEK BULGU REPLİKE OLDU (7.5× ölçek):** amikacin 0.68→**0.93 (+0.25)**, tobramycin 0.727→**0.907 (+0.18)**. Aminoglikozit merceği sağlam.
   - Not: n=40 phenotype'u artık re-run edilemez (data/ast.tsv 300'lük üzerine yazıldı); n=40 sonucu tarihsel kayıtta durur.
 
+## Yapıldı (devam)
+- **İKİNCİ TÜR: P. aeruginosa n=300 TAM KOŞU BİTTİ (2026-09-24 gece).** İzole config `config/config_paeruginosa.yaml` + `data/paeruginosa/` (baumannii kök verisine dokunmaz). Fetch 300/300 (1.9 GB), scan 300/300 (~8 sa, RGI darboğaz; resume kesinti-dayanıklı — Ali oturumu kapattı, arka plan süreci sağ kaldı), harmonize→concord→phenotype→report.html hepsi exit 0. Çıktı: `runs/20260923_154757_pseudomonas/`.
+  - **ÇEKİRDEK TEZ REPLİKE (tür-bağımsız):** araçlar hemfikirken uyum **0.81**, ayrışırken **0.41** (n=2449). Fark baumannii'den (0.78 vs 0.61) bile BÜYÜK. "Araç uyuşması = fenotip-güven sinyali" ikinci türde de tutuyor. ✅
+  - **AMA genel uyum ÇOK DÜŞÜK: sınıf 0.44 / drug 0.49 / hibrit 0.44.** Biyolojik olarak beklenen: P. aeruginosa direnci ağırlıkla mutasyon/efluks/regülatör kaynaklı → gen-katalog tarayıcıları (AMRFinder/RGI/ABRicate) bu mekanizmaları kaçırır. Kazanılmış-gen mantığı bu türde zayıf.
+  - **DRUG-ÖZGÜ/HİBRİT MERCEK TRANSFER OLMADI (özgün bulgu):** baumannii'de amikacin 0.40→0.95 fırlamıştı; P. aeruginosa'da 0.31→0.31, SIFIR katkı; hibrit 0 sahte-R düzeltti, 1 gerçek-R kaybetti (hibrit ≤ sınıf). **Bulgu: ince-mercek kazancı TÜRE + MEKANİZMAYA bağımlı** — kazanılmış-gen ağırlıklı türde işe yarar, mutasyon-ağırlıklı türde yaramaz. (Tez için güçlü kontrast örneği.)
+  - **Kusur işareti:** levofloxacin drug-katmanı 0.85 ama kapı `class_fallback`'e düşürüp 0.47'de bıraktı — kapı burada fazla temkinli, kazancı yedi. İncelenecek.
+- **DİSK:** `data/` toplam 3.1 GB (baumannii 1.2 GB / paeruginosa 1.9 GB, 600 genom); `runs/` 674 MB. data/ gitignore'da.
+
 ## Sırada
 1. **s05 rapor:** hibrit sonucu + ilaç-başına policy tablosu + "sınıfa-bağımlı değer" bulgusunu çift dilli HTML'e işle.
 2. **Literatür konumlama:** Davies 2021 (Microbial Genomics, E.coli çoklu-araç uyuşmazlığı — en yakın rakip) + hAMRoaster tam metin oku; "uyuşmazlık→fenotip-güven kuplajı + A.baumannii + drug-özgü hibrit" özgünlüğünü hakem-korumalı yaz.
