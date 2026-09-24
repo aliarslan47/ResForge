@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ResForge — Üç Tür Karşılaştırması</title>
+<meta name="description" content="ResForge: AMR genotip-fenotip güvenilirliğinin üç türde (A. baumannii, K. pneumoniae, P. aeruginosa) mekanizma-bağımlı karşılaştırması.">
+<style>
+  :root{
+    --bg:#f7f7f5; --surface:#fcfcfb; --surface-2:#f0efec; --border:#e2e1dc;
+    --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#84837d;
+    --sp1:#2a78d6; --sp2:#eb6834; --sp3:#1baf7a;
+    --good:#008300; --warn:#c98500; --bad:#e34948;
+    --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#141413; --surface:#1a1a19; --surface-2:#242422; --border:#33322f;
+      --ink:#ffffff; --ink-2:#c3c2b7; --ink-3:#8f8e85;
+      --sp1:#3987e5; --sp2:#d95926; --sp3:#199e70;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141413; --surface:#1a1a19; --surface-2:#242422; --border:#33322f;
+    --ink:#ffffff; --ink-2:#c3c2b7; --ink-3:#8f8e85;
+    --sp1:#3987e5; --sp2:#d95926; --sp3:#199e70;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 16px 80px}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+  h1{font-size:1.7rem;line-height:1.2;margin:0 0 4px;letter-spacing:-.02em}
+  h2{font-size:1.15rem;margin:44px 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--ink-2);font-size:.95rem;margin:0}
+  .lead{color:var(--ink-2);font-size:1.02rem;max-width:66ch;margin:10px 0 0}
+  .toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+  .toggle button{border:0;background:transparent;color:var(--ink-2);padding:6px 12px;font-size:.85rem;font-weight:600;cursor:pointer}
+  .toggle button[aria-pressed="true"]{background:var(--sp1);color:#fff}
+  .meta{color:var(--ink-3);font-size:.8rem;margin-top:6px}
+  section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-top:16px;box-shadow:var(--shadow)}
+  .note{color:var(--ink-2);font-size:.86rem;margin:10px 0 0;max-width:70ch}
+  table{border-collapse:collapse;width:100%;font-size:.86rem;margin-top:12px}
+  th,td{text-align:center;padding:7px 8px;border:1px solid var(--border)}
+  th{font-weight:600;color:var(--ink-2);background:var(--surface-2)}
+  td.lbl,th.lbl{text-align:left;font-weight:600;color:var(--ink);white-space:nowrap}
+  .cell{color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+  .barrow{display:flex;align-items:center;gap:12px;margin:10px 0}
+  .barrow .name{width:118px;font-weight:600;font-size:.9rem;flex:none}
+  .barrow .mech{color:var(--ink-3);font-size:.74rem;display:block;font-weight:400}
+  .track{flex:1;height:26px;background:var(--surface-2);border-radius:6px;position:relative;overflow:hidden}
+  .fill{height:100%;border-radius:6px 4px 4px 6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-weight:700;font-size:.82rem}
+  .grp{display:grid;grid-template-columns:118px 1fr;gap:8px 12px;align-items:center;margin:14px 0}
+  .mini{display:flex;gap:6px;align-items:flex-end;height:70px}
+  .mini .b{flex:1;border-radius:4px 4px 0 0;position:relative;min-width:0}
+  .mini .b span{position:absolute;top:-17px;left:0;right:0;text-align:center;font-size:.72rem;font-weight:600;color:var(--ink-2)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-2);margin-top:10px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .kpi{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+  .kpi div{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;flex:1;min-width:130px}
+  .kpi b{display:block;font-size:1.5rem;letter-spacing:-.02em}
+  .kpi small{color:var(--ink-3);font-size:.74rem}
+  ul{margin:8px 0 0;padding-left:20px}
+  li{margin:6px 0;color:var(--ink-2);font-size:.92rem}
+  li b{color:var(--ink)}
+  .en{display:none}
+  [data-lang="en"] .tr{display:none}
+  [data-lang="en"] .en{display:revert}
+  .tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:5px 9px;border-radius:6px;font-size:.76rem;opacity:0;transition:opacity .1s;z-index:9;white-space:nowrap}
+  .swatchrow{display:flex;align-items:center;gap:2px;margin-top:8px;font-size:.72rem;color:var(--ink-3)}
+  .swatchrow i{width:22px;height:12px;display:inline-block}
+</style>
+</head>
+<body data-lang="tr">
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="tr">ResForge — Üç Tür Karşılaştırması</span><span class="en">ResForge — Three-Species Comparison</span></h1>
+      <p class="sub"><span class="tr">AMR genotip→fenotip tahmin güvenilirliği, direnç mekanizmasına göre</span><span class="en">AMR genotype→phenotype prediction reliability, by resistance mechanism</span></p>
+      <p class="meta">n=300 genom/tür · 3 tarayıcı (AMRFinderPlus·RGI·ABRicate) · hAMRonization · 2026-09-24</p>
+    </div>
+    <div class="toggle" role="group" aria-label="dil">
+      <button id="tr" aria-pressed="true">TR</button><button id="en" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <p class="lead">
+    <span class="tr">Aynı boru hattı üç <em>Gram-negatif</em> patojende koşuldu. Tek değişen: direncin genetik mimarisi. Sonuç, genotip→fenotip güvenilirliğinin <b>direncin katalog-görünürlüğünün bir aynası</b> olduğunu gösteriyor.</span>
+    <span class="en">The same pipeline was run on three <em>Gram-negative</em> pathogens. The only variable: the genetic architecture of resistance. The result shows genotype→phenotype reliability is <b>a mirror of how visible resistance is to gene catalogs</b>.</span>
+  </p>
+
+  <!-- 1. GRADIENT -->
+  <section>
+    <h2><span class="tr">1 · Genel uyum gradyanı</span><span class="en">1 · The overall-concordance gradient</span></h2>
+    <p class="note"><span class="tr">Genel genotip→fenotip uyumu (hibrit fenotip merceği, tüm ilaç-izolat çiftleri). Üç tür temiz bir merdiven oluşturuyor: değer direnç mimarisiyle birlikte düşüyor.</span><span class="en">Overall genotype→phenotype agreement (hybrid phenotype lens, all drug-isolate pairs). The three species form a clean ladder: the value falls with resistance architecture.</span></p>
+    <div id="gradient"></div>
+  </section>
+
+  <!-- 2. THESIS -->
+  <section>
+    <h2><span class="tr">2 · Çekirdek tez: araç-uyuşması bir güven sinyali</span><span class="en">2 · Core thesis: tool concordance is a confidence signal</span></h2>
+    <p class="note"><span class="tr">Her türde, üç tarayıcı bir gende <b>hemfikirken</b> genotip→fenotip uyumu, <b>ayrışırken</b> olduğundan yüksek. İddia üç türde de tuttu; ama aradaki fark (sinyal gücü) mekanizmaya bağlı.</span><span class="en">In every species, genotype→phenotype agreement is higher where the three scanners <b>agree</b> on a gene than where they <b>disagree</b>. The claim held in all three; the size of the gap (signal strength) depends on mechanism.</span></p>
+    <div id="thesis"></div>
+    <div class="legend">
+      <span><i style="background:var(--good)"></i><span class="tr">Araçlar hemfikir</span><span class="en">Tools concordant</span></span>
+      <span><i style="background:var(--ink-3)"></i><span class="tr">Araçlar ayrışık</span><span class="en">Tools discordant</span></span>
+    </div>
+  </section>
+
+  <!-- 3. HEATMAP -->
+  <section>
+    <h2><span class="tr">3 · İlaç bazında ısı-haritası</span><span class="en">3 · Per-antibiotic heatmap</span></h2>
+    <p class="note"><span class="tr">Hücre = o ilaç-tür için genotip→fenotip uyumu (hibrit). Koyu = yüksek uyum. <b>◆</b> = drug-özgü merceğin sınıfa göre kazanç sağladığı hücre (delta). Değerler hücrede yazılı; renk yalnız ikinci kodlama.</span><span class="en">Cell = genotype→phenotype agreement (hybrid) for that drug×species. Darker = higher. <b>◆</b> = cell where the drug-specific lens gained over class (delta). Values are printed in-cell; color is only a secondary encoding.</span></p>
+    <div id="heatmap"></div>
+    <div class="swatchrow"><span>0.30</span><span id="ramp"></span><span>0.95</span><span class="tr">&nbsp;uyum</span><span class="en">&nbsp;agreement</span></div>
+    <p class="note"><span class="tr"><b>Okuma:</b> seftazidim (K. pneumoniae 0.86, ESBL = kazanılmış gen) ve aminoglikozitler (A. baumannii, aac/aph enzim geni) yüksek; karbapenemler ve P. aeruginosa geneli düşük (porin kaybı / efluks / mutasyon = katalog kör noktası). ◆ yalnız A. baumannii aminoglikozitlerinde: drug-mercek yalnız orada transfer oldu.</span><span class="en"><b>Reading:</b> ceftazidime (K. pneumoniae 0.86, ESBL = acquired gene) and aminoglycosides (A. baumannii, aac/aph enzyme genes) are high; carbapenems and P. aeruginosa broadly are low (porin loss / efflux / mutation = catalog blind spot). ◆ appears only in A. baumannii aminoglycosides: the drug lens transferred there alone.</span></p>
+  </section>
+
+  <!-- 4. TOOL DISAGREEMENT -->
+  <section>
+    <h2><span class="tr">4 · Araçlar neden ayrışıyor</span><span class="en">4 · Why the tools disagree</span></h2>
+    <p class="note"><span class="tr">Araç-uyuşmazlığı türden bağımsız yüksek (ort. pairwise Jaccard 0.16–0.24). Sebebin yarısı biyoloji değil <b>araç tasarımı</b>: AMRFinderPlus küratörlü (az, çoğu kendine özgü), ABRicate ve RGI bol (çok, birbiriyle örtüşür).</span><span class="en">Tool disagreement is high regardless of species (mean pairwise Jaccard 0.16–0.24). Half the cause is not biology but <b>tool design</b>: AMRFinderPlus is curated (few calls, mostly unique), while ABRicate and RGI are permissive (many, overlapping each other).</span></p>
+    <table>
+      <thead><tr><th class="lbl">Tür / Species</th><th>Jaccard</th><th><span class="tr">AMRFinder özgün%</span><span class="en">AMRFinder unique%</span></th><th><span class="tr">ABRicate özgün%</span><span class="en">ABRicate unique%</span></th><th><span class="tr">RGI özgün%</span><span class="en">RGI unique%</span></th><th><span class="tr">tam-konkordan gen</span><span class="en">fully-concordant genes</span></th></tr></thead>
+      <tbody>
+        <tr><td class="lbl">A. baumannii</td><td>0.24</td><td>80%</td><td>34%</td><td>21%</td><td>1153 / 27334</td></tr>
+        <tr><td class="lbl">K. pneumoniae</td><td>0.16</td><td>87%</td><td>49%</td><td>44%</td><td>1377 / 38794</td></tr>
+        <tr><td class="lbl">P. aeruginosa</td><td>0.21</td><td>81%</td><td>25%</td><td>25%</td><td>267 / 42534</td></tr>
+      </tbody>
+    </table>
+    <p class="note"><span class="tr">AMRFinderPlus çağrılarının ~%80–87'si yalnız kendisinde; küratörlü araç, bol araçlarla neredeyse hiç örtüşmüyor. Bu, düşük Jaccard'ın araç-tasarımı kaynaklı, tür-bağımsız bileşeni.</span><span class="en">~80–87% of AMRFinderPlus calls are unique to it; the curated tool barely overlaps the permissive ones. This is the tool-design, species-independent component of the low Jaccard.</span></p>
+  </section>
+
+  <!-- 5. FINDINGS -->
+  <section>
+    <h2><span class="tr">5 · Ana bulgular</span><span class="en">5 · Key findings</span></h2>
+    <ul>
+      <li><span class="tr"><b>Tez tür-bağımsız tuttu.</b> Araçlar hemfikirken uyum, ayrışırkenden yüksek (üç türde de: 0.95&gt;0.69 · 0.67&gt;0.52 · 0.81&gt;0.41).</span><span class="en"><b>The thesis held across species.</b> Concordant-tool agreement exceeds discordant in all three (0.95&gt;0.69 · 0.67&gt;0.52 · 0.81&gt;0.41).</span></li>
+      <li><span class="tr"><b>Güvenilirlik = katalog-görünürlüğü.</b> Genel uyum gradyanı (0.75→0.57→0.44) direncin kazanılmış-gen → karışık → mutasyon/efluks eksenini birebir izliyor.</span><span class="en"><b>Reliability = catalog visibility.</b> The overall gradient (0.75→0.57→0.44) tracks the acquired-gene → mixed → mutational/efflux axis exactly.</span></li>
+      <li><span class="tr"><b>Drug-özgü mercek türe/mekanizmaya bağımlı.</b> Yalnız A. baumannii'de altın (amikacin 0.68→0.93, aac/aph temiz enzim geni); K. pneumoniae ve P. aeruginosa'da net kazanç yok. "Her zaman iyileştirir" iddiası yanlış olurdu.</span><span class="en"><b>The drug-specific lens is species/mechanism-dependent.</b> Gold only in A. baumannii (amikacin 0.68→0.93, clean aac/aph enzyme genes); no net gain in K. pneumoniae or P. aeruginosa. Claiming "always improves" would be wrong.</span></li>
+      <li><span class="tr"><b>Fenotibe-kör kapı işini yaptı.</b> Beta-laktamlarda (geniş-spektrum, kaba etiket) drug-katmanını devre dışı bırakıp seftazidim çöküşünü (0.76→0.19 riski) önledi; toplam 142 sahte-R düzeltip 1 gerçek-R kaybederek (A. baumannii) neredeyse saf kazanç sağladı.</span><span class="en"><b>The phenotype-blind gate worked.</b> It disabled the drug layer for beta-lactams (broad-spectrum, coarse labels), averting the ceftazidime collapse (0.76→0.19 risk); overall it fixed 142 false-R and lost 1 true-R (A. baumannii), near-pure gain.</span></li>
+    </ul>
+    <p class="note"><span class="tr"><b>Dürüstlük notu:</b> P. aeruginosa'nın düşük uyumu bir hata değil: bu türün direnci ağırlıkla OprD/AmpC/efluks/gyrA mutasyonuyla sürülür, gen-katalogları prensipte göremez. Her araç çağrısı provenance'lı; boş/başarısız çağrı WARNING olarak işaretlenir, uydurma sonuç yoktur.</span><span class="en"><b>Honesty note:</b> P. aeruginosa's low concordance is not a bug: its resistance is largely driven by OprD/AmpC/efflux/gyrA mutation, which gene catalogs cannot see in principle. Every tool call carries provenance; empty/failed calls are flagged WARNING; no fabricated results.</span></p>
+  </section>
+
+  <p class="meta" style="margin-top:24px">
+    <span class="tr">Kaynak koşular: </span><span class="en">Source runs: </span>
+    runs/20260923_103454_acinetobacter · runs/20260924_111602_klebsiella · runs/20260923_154757_pseudomonas ·
+    <span class="tr">veri BV-BRC (eski PATRIC), deterministik çekim.</span><span class="en">data from BV-BRC (formerly PATRIC), deterministic fetch.</span>
+  </p>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+// ---- data (koşulardan, gerçek değerler) ----
+const SP=[
+  {k:"A. baumannii", mech_tr:"kazanılmış-gen", mech_en:"acquired-gene", c:0.75, conc:0.948, disc:0.690, col:"var(--sp1)"},
+  {k:"K. pneumoniae",mech_tr:"karışık",        mech_en:"mixed",         c:0.57, conc:0.669, disc:0.519, col:"var(--sp2)"},
+  {k:"P. aeruginosa",mech_tr:"mutasyon/efluks",mech_en:"mutational/efflux",c:0.44,conc:0.806,disc:0.409, col:"var(--sp3)"},
+];
+const AB=["amikacin","tobramycin","gentamicin","ciprofloxacin","levofloxacin","ceftazidime","imipenem","meropenem","tetracycline"];
+// [baumannii, klebsiella, paeruginosa]  (hyb, delta)
+const HM={
+ amikacin:[[0.93,0.25],[0.36,0],[0.31,0]], tobramycin:[[0.91,0.18],[0.63,0],[0.38,0]],
+ gentamicin:[[0.85,0.04],[0.47,0],[0.38,0]], ciprofloxacin:[[0.84,0],[0.75,0],[0.45,0]],
+ levofloxacin:[[0.73,0],[0.72,0],[0.47,0]], ceftazidime:[[0.76,0],[0.86,0],[0.45,0]],
+ imipenem:[[0.51,0],[0.46,0],[0.61,0]], meropenem:[[0.50,0],[0.48,0],[0.48,0]],
+ tetracycline:[[0.74,0],[0.46,0],[0.60,0]],
+};
+// blue sequential ramp 100->700
+const RAMP=["#cde2fb","#b7d3f6","#9ec5f4","#86b6ef","#6da7ec","#5598e7","#3987e5","#2a78d6","#256abf","#1c5cab","#184f95","#104281","#0d366b"];
+function rampColor(v){ // v in [0.3,0.95] -> ramp
+  const t=Math.max(0,Math.min(1,(v-0.30)/(0.95-0.30)));
+  return RAMP[Math.round(t*(RAMP.length-1))];
+}
+function darkText(v){return (v-0.30)/(0.95-0.30)>0.42;} // white text on darker cells
+
+const tip=document.getElementById('tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;moveTip(e);}
+function moveTip(e){tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';}
+function hideTip(){tip.style.opacity=0;}
+const L=()=>document.body.dataset.lang;
+
+// ---- 1. gradient bars ----
+(function(){
+  const el=document.getElementById('gradient');
+  SP.forEach(s=>{
+    const row=document.createElement('div');row.className='barrow';
+    row.innerHTML=`<div class="name">${s.k}<span class="mech" data-tr="${s.mech_tr}" data-en="${s.mech_en}">${s.mech_tr}</span></div>
+      <div class="track"><div class="fill" style="width:${s.c*100}%;background:${s.col}">${s.c.toFixed(2)}</div></div>`;
+    const fill=row.querySelector('.fill');
+    fill.addEventListener('mousemove',e=>showTip(e,`${s.k} · ${L()==='tr'?'genel uyum':'overall'} <b>${s.c.toFixed(2)}</b>`));
+    fill.addEventListener('mouseleave',hideTip);
+    el.appendChild(row);
+  });
+})();
+
+// ---- 2. thesis grouped mini-bars ----
+(function(){
+  const el=document.getElementById('thesis');
+  SP.forEach(s=>{
+    const g=document.createElement('div');g.className='grp';
+    g.innerHTML=`<div class="name" style="width:auto">${s.k}</div>
+      <div class="mini">
+        <div class="b" style="height:${s.conc*100}%;background:var(--good)"><span>${s.conc.toFixed(2)}</span></div>
+        <div class="b" style="height:${s.disc*100}%;background:var(--ink-3)"><span>${s.disc.toFixed(2)}</span></div>
+        <div class="b" style="height:0"></div>
+      </div>`;
+    const bs=g.querySelectorAll('.b');
+    bs[0].addEventListener('mousemove',e=>showTip(e,`${s.k} · ${L()==='tr'?'hemfikir':'concordant'} <b>${s.conc.toFixed(2)}</b>`));
+    bs[1].addEventListener('mousemove',e=>showTip(e,`${s.k} · ${L()==='tr'?'ayrışık':'discordant'} <b>${s.disc.toFixed(2)}</b>`));
+    bs.forEach(b=>b.addEventListener('mouseleave',hideTip));
+    el.appendChild(g);
+  });
+})();
+
+// ---- 3. heatmap table ----
+(function(){
+  const el=document.getElementById('heatmap');
+  let h=`<table><thead><tr><th class="lbl" data-tr="antibiyotik" data-en="antibiotic">antibiyotik</th>
+     <th>A. baumannii</th><th>K. pneumoniae</th><th>P. aeruginosa</th></tr></thead><tbody>`;
+  AB.forEach(ab=>{
+    h+=`<tr><td class="lbl">${ab}</td>`;
+    HM[ab].forEach((cell,i)=>{
+      const [v,d]=cell; const bg=rampColor(v); const tc=darkText(v)?'#fff':'#0b0b0b';
+      const mark=d>0?' ◆':'';
+      h+=`<td class="cell" data-v="${v}" data-d="${d}" data-sp="${SP[i].k}" data-ab="${ab}" style="background:${bg};color:${tc}">${v.toFixed(2)}${mark}</td>`;
+    });
+    h+=`</tr>`;
+  });
+  h+=`</tbody></table>`;
+  el.innerHTML=h;
+  el.querySelectorAll('td.cell').forEach(td=>{
+    td.addEventListener('mousemove',e=>{
+      const d=+td.dataset.d, extra=d>0?` · ${L()==='tr'?'drug-mercek':'drug lens'} +${d.toFixed(2)}`:'';
+      showTip(e,`${td.dataset.sp} · ${td.dataset.ab}<br>${L()==='tr'?'uyum':'agreement'} <b>${(+td.dataset.v).toFixed(2)}</b>${extra}`);
+    });
+    td.addEventListener('mouseleave',hideTip);
+  });
+  // ramp swatch
+  const r=document.getElementById('ramp');
+  r.innerHTML=RAMP.map(c=>`<i style="background:${c}"></i>`).join('');
+})();
+
+// ---- lang toggle ----
+function setLang(l){
+  document.body.dataset.lang=l;
+  document.documentElement.lang=l;
+  tr.setAttribute('aria-pressed',l==='tr'); en.setAttribute('aria-pressed',l==='en');
+  document.querySelectorAll('[data-tr]').forEach(n=>{n.textContent=n.dataset[l];});
+}
+tr.onclick=()=>setLang('tr'); en.onclick=()=>setLang('en');
+</script>
+</body>
+</html>
