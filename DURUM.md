@@ -51,6 +51,15 @@
   - **Kusur işareti:** levofloxacin drug-katmanı 0.85 ama kapı `class_fallback`'e düşürüp 0.47'de bıraktı — kapı burada fazla temkinli, kazancı yedi. İncelenecek.
 - **DİSK:** `data/` toplam 3.1 GB (baumannii 1.2 GB / paeruginosa 1.9 GB, 600 genom); `runs/` 674 MB. data/ gitignore'da.
 
+## Yapıldı (devam)
+- **ÜÇÜNCÜ TÜR: K. pneumoniae n=300 TAM KOŞU BİTTİ (2026-09-24).** İzole config `config/config_klebsiella.yaml` + `data/klebsiella/` (taxon 573; uzunluk penceresi Klebsiella'ya göre **5.0–6.0 Mb** — varsayılan 3.5–4.4 yanlış olurdu; AMRFinder organism `Klebsiella_pneumoniae` doğrulandı). Pilot (n=5) ile pencere+izolasyon doğrulandı; fetch 300/300 (1.6 GB), scan 300/300 (~7.5 sa), harmonize→concord→phenotype→report exit 0. Çıktı: `runs/20260924_111602_klebsiella/`. Baumannii+paeruginosa verisi dokunulmadı.
+  - **TEZ TAHMİNİ TUTTU — Klebsiella tam ORTAYA düştü.** Genel genotip→fenotip gradyanı: **baumannii 0.75 → Klebsiella 0.57 → paeruginosa 0.44.** Direnç mimarisi (kazanılmış-gen → karışık → mutasyon/efluks) ekseni üç bağımsız türle doğrulandı.
+  - **Klebsiella detay (n=2861 çift):** Jaccard 0.16 (üçünün en düşüğü — araçlar en az uyuşuyor); hemfikir 0.67 vs ayrışık 0.52 (tez tuttu ama fark en dar=0.15); hibrit 0.57 (19 sahte-R düzeltti/18 gerçek-R kaybetti = **net sıfır, drug-mercek transfer OLMADI**).
+  - **İlaç-bazında karışıklık görünür:** seftazidim **0.86** (ESBL=kazanılmış gen, katalogta) yüksek; karbapenem 0.46–0.48 (KPC/NDM + **OmpK35/36 porin kaybı** karışık) düşük; amikacin **0.36** (baumannii'nin temiz aac enzimine benzemiyor) en düşük. Tek tür içinde bile mekanizma-görünürlük ilişkisi tutuyor.
+  - **BULGU PEKİŞTİ:** drug-mercek yalnız baumannii'de altın (aminoglikozit=temiz enzim geni); Klebsiella+paeruginosa'da etkisiz → ince-mercek değeri türe/mekanizmaya bağımlı. Baumannii istisna.
+- **ÜÇ-TÜR MANŞETİ:** ResForge'un ölçtüğü "genotip-fenotip güvenilirliği" = direncin katalog-görünürlüğünün aynası; hem genel uyum hem drug-mercek değeri kazanılmış→karışık→mutasyonel ekseninde hareket ediyor.
+- **DİSK GÜNCEL:** `data/` ~4.7 GB (3 tür × 300 genom); `runs/` büyüdü.
+
 ## Sırada
 1. **s05 rapor:** hibrit sonucu + ilaç-başına policy tablosu + "sınıfa-bağımlı değer" bulgusunu çift dilli HTML'e işle.
 2. **Literatür konumlama:** Davies 2021 (Microbial Genomics, E.coli çoklu-araç uyuşmazlığı — en yakın rakip) + hAMRoaster tam metin oku; "uyuşmazlık→fenotip-güven kuplajı + A.baumannii + drug-özgü hibrit" özgünlüğünü hakem-korumalı yaz.
